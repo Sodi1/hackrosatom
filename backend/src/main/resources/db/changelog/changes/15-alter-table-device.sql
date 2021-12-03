@@ -1,0 +1,1 @@
+ALTER TABLE device ADD COLUMN surface_type character varying DEFAULT NULL;

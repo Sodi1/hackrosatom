@@ -1,0 +1,1 @@
+ALTER TABLE plant ADD COLUMN is_leak boolean default false;

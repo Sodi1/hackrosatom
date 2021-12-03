@@ -1,0 +1,1 @@
+ALTER TABLE plant ADD COLUMN plant_kind character varying DEFAULT 'NPZ';

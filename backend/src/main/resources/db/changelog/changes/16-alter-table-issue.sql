@@ -1,0 +1,1 @@
+ALTER TABLE issue ADD COLUMN issue_status character varying; 
