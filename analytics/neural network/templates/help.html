@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <title>Service Help</title>
+
+    <style>
+        .input-group,
+        .main-content {
+            min-width: 400px !important;
+            width: 100%;
+            padding: 10px 0 0 10px;
+        }
+
+        .command-b,
+        .title-name {
+            margin-left: 4px;
+            padding: 5px;
+            border-radius: 10px;
+            background-color: #333333;
+        }
+
+        .title-name {
+            width: 20%;
+            text-align: center;
+            margin: 0;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        p,
+        h3,
+        form {
+            font-family: 'Fira Code', monospace;
+        }
+
+        body {
+            background-color: #353535;
+        }
+
+        code {
+            color: wheat !important;
+            width: 40%;
+            text-align: center;
+            margin: 0;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+
+        }
+
+        ::-moz-focus-inner {
+            border: 0;
+        }
+
+        :active,
+        :hover,
+        :focus {
+            outline: 0 !important;
+            outline-offset: 0;
+            box-shadow: none !important;
+        }
+
+        ::selection {
+            border-radius: 4px;
+            background: dimgray;
+        }
+    </style>
+
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+</head>
+<body class="bg-dark">
+    <h3 class="title-name" style="color: green"><a style="color: wheat; text-decoration-style: dotted;"
+            href="https://oil.kovalev.team/">Endpoints</a><sub>🛢</a></sub></h3>
+    <br>
+    {% for endp in endpoints %}
+    <tr>
+        <code lang="bash">{{ endp[0] }}, methods: {{ endp[1] }}</code>
+
+    </tr>
+    {% endfor %}
+
+</body>
+</html>
