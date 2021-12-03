@@ -1,0 +1,37 @@
+{
+    "name": "hackathon-final-rosatom",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "serve": "vue-cli-service serve",
+        "build": "vue-cli-service build",
+        "deploy": "npm run build && rsync -e 'ssh -p 2848' -a --delete-before dist/ serveriot@cnc.kovalev.team:/home/serveriot/oil-front/ --delete"
+    },
+    "dependencies": {
+        "axios": "^0.24.0",
+        "chart.js": "^3.6.0",
+        "core-js": "^3.6.5",
+        "deep-equal": "^1.1.1",
+        "leaflet": "^1.7.1",
+        "leaflet-geosearch": "^3.3.2",
+        "leaflet.markercluster": "^1.5.0",
+        "prettier": "^2.4.1",
+        "vue": "^2.6.11",
+        "vue-router": "^3.2.0",
+        "vue2-leaflet": "^2.7.1",
+        "vue2-leaflet-markercluster": "^3.1.0",
+        "vuetify": "^2.4.0",
+        "vuex": "^3.4.0"
+    },
+    "devDependencies": {
+        "@vue/cli-plugin-babel": "~4.5.0",
+        "@vue/cli-plugin-router": "~4.5.0",
+        "@vue/cli-plugin-vuex": "~4.5.0",
+        "@vue/cli-service": "~4.5.0",
+        "sass": "~1.32.0",
+        "sass-loader": "^10.0.0",
+        "vue-cli-plugin-vuetify": "~2.4.4",
+        "vue-template-compiler": "^2.6.11",
+        "vuetify-loader": "^1.7.0"
+    }
+}
