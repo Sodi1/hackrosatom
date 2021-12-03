@@ -36,19 +36,24 @@ public class IssueServiceImpl implements IssueService {
     private final CityService cityService;
 
     @Override
+    public Issue save(Issue issue) {
+        return issueRepository.save(issue);
+    }
+
+    @Override
     public Issue save(IssueDto issueDto) {
         return issueRepository.save(Objects.requireNonNull(issueDtoToIssueConverter.convert(issueDto)));
     }
 
     public List<IssueReportDto> findAllIssues(List<IssueStatus> issueStatus) {
         List<IssueReportDto> result = new ArrayList<>();
-        for(IssueStatus status : issueStatus) {
+        for (IssueStatus status : issueStatus) {
             List<Issue> issues = issueRepository.findAllByIssueStatus(status);
-            if(!issues.isEmpty()) {
+            if (!issues.isEmpty()) {
                 result.addAll(getIssueReportDtos(issues));
             }
         }
-       return result;
+        return result;
     }
 
 
@@ -57,6 +62,45 @@ public class IssueServiceImpl implements IssueService {
         List<Issue> issues = issueRepository.findByPlantIdOrderByCreatedAtAsc(plantId);
 
         return getIssueReportDtos(issues);
+    }
+
+    @Override
+    public IssueReportDto findByIssueId(Long issueId) {
+
+        Optional<Issue> issueOpt = issueRepository.findById(issueId);
+
+        if (issueOpt.isPresent()) {
+
+            Issue issue = issueOpt.get();
+
+            List<IssueReportDto> issueDtos = new ArrayList<>();
+
+            List<City> cities = cityService.findAll()
+                    .stream()
+                    .filter(x -> Objects.nonNull(x.getGeoLat()))
+                    .filter(x -> Objects.nonNull(x.getGeoLon()))
+                    .collect(Collectors.toList());
+
+            buildIssueReport(issueDtos, cities, issue);
+
+            if (!issueDtos.isEmpty()) {
+                return issueDtos.get(0);
+            }
+
+        }
+
+        return new IssueReportDto();
+    }
+
+    @Override
+    public Optional<Issue> findById(Long issueId) {
+        return issueRepository.findById(issueId);
+    }
+
+    @Override
+    public void delete(Long id) {
+        Optional<Issue> issueOpt = issueRepository.findById(id);
+        issueOpt.ifPresent(issueRepository::delete);
     }
 
 
@@ -72,49 +116,57 @@ public class IssueServiceImpl implements IssueService {
 
         for (Issue issue : issues) {
 
-            List<City> affectedCity = new ArrayList<>();
+            buildIssueReport(issueDtos, cities, issue);
 
-            List<Device> triggeredDevices = new ArrayList<>();
+        }
 
-            List<Issue2Device> issue2Devices = issue.getIssue2Devices();
+        return issueDtos;
+    }
 
-            Hibernate.initialize(issue2Devices);
+    private void buildIssueReport(List<IssueReportDto> issueDtos,
+                                  List<City> cities,
+                                  Issue issue) {
+        List<City> affectedCity = new ArrayList<>();
 
-            for (Issue2Device issue2Device : issue2Devices) {
-                Optional<Device> deviceOpt = deviceService.findById(issue2Device.getDeviceId());
-                if (deviceOpt.isPresent()) {
-                    Device device = deviceOpt.get();
-                    triggeredDevices.add(device);
-                    if (device.getLan() != null && device.getLon() != null) {
-                        List<City> foundCities = cities.parallelStream()
-                                .filter(c->GeoUtils.distance(Double.parseDouble(device.getLan()),
-                                        Double.parseDouble(c.getGeoLat()), Double.parseDouble(device.getLon()),
-                                        Double.parseDouble(c.getGeoLon()), 0, 0) < 10_000)
-                                .collect(Collectors.toList());
-                        if(!foundCities.isEmpty()){
-                            affectedCity.addAll(foundCities);
-                        }
+        List<Device> triggeredDevices = new ArrayList<>();
+
+        List<Issue2Device> issue2Devices = issue.getIssue2Devices();
+
+        Hibernate.initialize(issue2Devices);
+
+        for (Issue2Device issue2Device : issue2Devices) {
+            Optional<Device> deviceOpt = deviceService.findById(issue2Device.getDeviceId());
+            if (deviceOpt.isPresent()) {
+                Device device = deviceOpt.get();
+                triggeredDevices.add(device);
+                if (device.getLan() != null && device.getLon() != null) {
+                    List<City> foundCities = cities.parallelStream()
+                            .filter(c -> GeoUtils.distance(Double.parseDouble(device.getLan()),
+                                    Double.parseDouble(c.getGeoLat()), Double.parseDouble(device.getLon()),
+                                    Double.parseDouble(c.getGeoLon()), 0, 0) < 10_000)
+                            .collect(Collectors.toList());
+                    if (!foundCities.isEmpty()) {
+                        affectedCity.addAll(foundCities);
                     }
                 }
-                deviceOpt.ifPresent(triggeredDevices::add);
-
             }
-            List<FileImage> fileImages = issue.getFileImages();
+            deviceOpt.ifPresent(triggeredDevices::add);
 
-            Hibernate.initialize(fileImages);
-            issueDtos.add(new IssueReportDto(
-                    issue.getId(),
-                    issue.getPlantId(),
-                    issue.getIssueTitle(),
-                    issue.getIssueDescription(),
-                    issue.getIsSatellite(),
-                    fileImages,
-                    triggeredDevices,
-                    affectedCity,
-                    issue.getIssueStatus(),
-                    issue.getCreatedAt()
-            ));
         }
-        return issueDtos;
+        List<FileImage> fileImages = issue.getFileImages();
+
+        Hibernate.initialize(fileImages);
+        issueDtos.add(new IssueReportDto(
+                issue.getId(),
+                issue.getPlantId(),
+                issue.getIssueTitle(),
+                issue.getIssueDescription(),
+                issue.getIsSatellite(),
+                fileImages,
+                triggeredDevices,
+                affectedCity,
+                issue.getIssueStatus(),
+                issue.getCreatedAt()
+        ));
     }
 }

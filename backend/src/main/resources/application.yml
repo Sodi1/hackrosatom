@@ -58,3 +58,8 @@ hibernate:
 image:
   upload:
     path: /home/serveriot/oil-api/img
+
+outer:
+  services:
+    predict:
+      url: https://oil-detect.kovalev.team
