@@ -38,4 +38,21 @@ export class IssueService {
     static async createIssue(issue) {
         await httpClient().post("/api/issue", issue);
     }
+
+    static async getIssueById(id) {
+        const response = await httpClient().get(`/api/issue/${id}`);
+
+        return response.data;
+    }
+
+    static async deleteIssueById(id) {
+        await httpClient().delete(`/api/issue/${id}`);
+    }
+
+    static async buildReport(issueId) {
+        const url = constructUrlWithQueryParams("/api/issue/buildReport", {issueId});
+        const response = await httpClient().post(url);
+
+        return response.data;
+    }
 }

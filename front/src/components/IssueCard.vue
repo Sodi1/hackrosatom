@@ -8,8 +8,11 @@
                 <span>{{ issue.issueTitle }}</span>
             </div>
             <div v-if="issue.isSatellite" class="satellite">
-                <Icon size="30" name="satellite" />
+                <Icon size="25" name="satellite" />
             </div>
+            <v-btn icon @click.prevent="deleteIssue">
+                <v-icon>delete</v-icon>
+            </v-btn>
         </div>
         <div class="description" v-html="issue.issueDescription" />
 
@@ -19,40 +22,52 @@
                 Отчет
             </v-btn>
 
-            <v-btn
-                v-else
-                text
-                color="#D97706"
-                :loading="fileUploadInProcess"
-                @click="showFileUploadWindow"
-            >
-                <v-icon left>upload_file</v-icon>
-                Прикрепить фото
-            </v-btn>
+            <v-menu v-else offset-y>
+                <template v-slot:activator="{ on, attrs }">
+                    <v-btn
+                        v-bind="attrs"
+                        v-on="on"
+                        text
+                        color="#D97706"
+                        @click.prevent
+                    >
+                        <v-icon left>upload_file</v-icon>
+                        Прикрепить фото
+                    </v-btn>
+                </template>
+                <v-list>
+                    <v-list-item @click="showFileUploadWindow">
+                        <v-list-item-title>Спутник</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item @click="showFileUploadWindow">
+                        <v-list-item-title>Беспилотник</v-list-item-title>
+                    </v-list-item>
+                </v-list>
+            </v-menu>
         </div>
 
-        <input type="file" multiple class="d-none" ref="fileInput" @input="uploadSelectedFiles" />
+        <UploadIssueFilesInput
+            with-redirect
+            :issue-id="issue.issueId"
+            ref="uploadInput"
+            @uploadFinish="redirectToIssue"
+        />
     </div>
 </template>
 
 <script>
 import Icon from "@/components/Icon";
-import { FileService } from "@/services/FileService";
+import { IssueService } from "@/services/IssueService";
+import UploadIssueFilesInput from "@/components/UploadIssueFilesInput";
 
 export default {
     name: "IssueCard",
-    components: { Icon },
+    components: { UploadIssueFilesInput, Icon },
     props: {
         issue: {
             type: Object,
             required: true
         }
-    },
-    data() {
-        return {
-            uploadFiles: [],
-            fileUploadInProcess: false
-        };
     },
     computed: {
         waitingForFileUpload() {
@@ -60,24 +75,24 @@ export default {
         }
     },
     methods: {
-        async uploadSelectedFiles(e) {
-            const files = e.target.files;
-
-            this.fileUploadInProcess = true;
+        showFileUploadWindow() {
+            this.$refs.uploadInput.open();
+        },
+        async deleteIssue() {
             try {
-                await FileService.uploadIssueFiles(files, this.issue.issueId);
-
-                this.$emit("issueCreate");
+                await IssueService.deleteIssueById(this.issue.issueId);
             } catch (e) {
                 alert("Error");
 
-                console.error(e);
-            } finally {
-                this.fileUploadInProcess = false;
+                console.log(e);
             }
+
+            this.$emit("issueDeleted");
         },
-        showFileUploadWindow() {
-            this.$refs.fileInput.dispatchEvent(new MouseEvent("click"));
+        redirectToIssue() {
+            const organizationId = this.$route.params.organizationId;
+
+            this.$router.push(`/organization/${organizationId}/incident/${this.issue.issueId}`);
         }
     }
 };
@@ -100,6 +115,9 @@ export default {
 
 .issue-card {
     padding: 20px 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 
     &.warning-card {
         border: 1px solid #d97706;
@@ -122,10 +140,11 @@ export default {
         font-size: 18px;
         color: #6b7280;
         margin-top: 10px;
+        margin-bottom: 10px;
     }
 
     .action {
-        margin-top: 60px;
+        margin-top: auto;
     }
 }
 </style>

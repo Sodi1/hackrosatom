@@ -4,10 +4,10 @@
             <img src="../assets/img/logo.svg" alt="Logo" class="logo" />
         </router-link>
 
-        <SidebarNavigation />
+        <SidebarNavigation class="mt-12" />
 
-        <div>
-            <img src="../assets/img/avatar.jpeg" alt="User avatar" />
+        <div class="mt-auto">
+            <img src="../assets/img/avatar.jpeg" alt="User avatar" class="avatar" />
         </div>
     </aside>
 </template>
@@ -30,12 +30,17 @@ aside {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
     border-right: 3px solid #d7e7f5;
     padding: 16px 0;
 
     .logo {
         width: 60px;
+    }
+
+    .avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
     }
 }
 </style>

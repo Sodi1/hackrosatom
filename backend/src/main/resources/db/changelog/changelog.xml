@@ -22,5 +22,6 @@
     <include file="changes/15-alter-table-device.sql" relativeToChangelogFile="true"/>
     <include file="changes/16-alter-table-issue.sql" relativeToChangelogFile="true"/>
     <include file="changes/17-create-table-issue2device.sql" relativeToChangelogFile="true"/>
-    <include file="changes/18-create-table-city.sql" relativeToChangelogFile="true" />
+    <include file="changes/18-create-table-city.sql" relativeToChangelogFile="true"/>
+    <include file="changes/19-create-table-spill.sql" relativeToChangelogFile="true"/>
 </databaseChangeLog>

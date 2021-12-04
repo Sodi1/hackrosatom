@@ -11,19 +11,24 @@ const routes = [
         component: Home
     },
     {
-        path: "/organization/:id",
+        path: "/organization/:organizationId",
         name: "Organization",
         component: () => import("@/views/OrganizationView.vue")
     },
     {
-        path: "/organization/:id/devices",
+        path: "/organization/:organizationId/devices",
         name: "Organization devices",
         component: () => import("@/views/OrganizationDevicesView.vue")
     },
     {
-        path: "/organization/:id/incidents",
+        path: "/organization/:organizationId/incidents",
         name: "Organization incidents",
         component: () => import("@/views/OrganizationIncidentsView.vue")
+    },
+    {
+        path: "/organization/:organizationId/incident/:incidentId",
+        name: "Incident",
+        component: () => import("@/views/IncidentView.vue")
     }
 ];
 

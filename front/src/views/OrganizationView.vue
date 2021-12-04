@@ -6,16 +6,22 @@
             <div class="d-flex">
                 <div class="left-side">
                     <div class="d-flex mt-4">
-                        <SingleValueCard label="Количество датчиков" :value="organization.devices.length" />
+                        <SingleValueCard
+                            label="Количество датчиков"
+                            :value="organization.devices.length"
+                        />
                         <SingleValueCard label="Зона покрытия" value="3.5 км" class="ml-4" />
-                        <SingleValueCard label="Количество инцидентов" value="1" class="ml-4" />
+                        <SingleValueCard
+                            label="Количество инцидентов"
+                            :value="organization.devices.length"
+                            class="ml-4"
+                        />
                     </div>
 
                     <div class="cards mt-4">
                         <OrganizationInformationCard :organization="organization" />
                     </div>
                 </div>
-
             </div>
             <MapComponent v-if="points" kind="devise" :points="points" class="map" />
         </template>
@@ -40,7 +46,7 @@ export default {
         };
     },
     mounted() {
-        const id = this.$route.params.id;
+        const id = this.$route.params.organizationId;
 
         OrganizationService.getById(id).then((org) => {
             this.organization = org;
@@ -50,5 +56,4 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
-</style>
+<style scoped lang="scss"></style>

@@ -1,0 +1,5 @@
+requests
+w1thermsensor
+adafruit-circuitpython-ads1x15
+Adafruit_DHT
+Adafruit_ADS1x15

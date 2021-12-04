@@ -18,6 +18,13 @@
             <span class="label">Cтатус: </span>
             <div class="text">{{ organization.refineryStatus }}</div>
         </div>
+        <div class="info-block">
+            <span class="label">lat: </span>
+            <span class="text">{{ organization.lat }}</span>
+
+            <span class="label ml-5">lon: </span>
+            <span class="text">{{ organization.lon }}</span>
+        </div>
     </div>
 </template>
 

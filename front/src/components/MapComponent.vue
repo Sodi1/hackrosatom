@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="kind == 'main'" class="d-flex justify-center mb-6 pt-3">
-            <div style="width: 70%">
+            <div style="width: 50%">
                 <v-autocomplete
                     :search-input.sync="search"
                     v-model="selectedPlant"
@@ -31,21 +31,43 @@
                     </template>
                 </v-autocomplete>
             </div>
+            <div class="pl-6">
+                <v-select
+                    v-model="selectedFilter"
+                    style="width: 100%; height: 46px"
+                    solo
+                    item-value="value"
+                    item-text="name"
+                    :items="filters"
+                    @input="loadPoints"
+                    multiple
+                    label="Фильтр по типу"
+                ></v-select>
+            </div>
         </div>
         <l-map :zoom="zoom" :center="center" ref="map" v-bind:style="mapStyle">
             <l-tile-layer :url="url"></l-tile-layer>
-            <l-geo-json
-                ref="plants"
-                :geojson="plantsGeojson"
-                :options="plantsOptions"
-                :options-style="styleFunction"
-            ></l-geo-json>
+            <v-marker-cluster ref="clusterRef">
+                <l-geo-json
+                    ref="plants"
+                    :geojson="plantsGeojson"
+                    :options="plantsOptions"
+                    :options-style="styleFunction"
+                ></l-geo-json>
+            </v-marker-cluster>
             <l-geo-json
                 ref="devices"
                 :geojson="deviseGeojson"
                 :options="deviseOptions"
                 :options-style="styleFunction"
             ></l-geo-json>
+            <v-marker-cluster ref="oilClusterRef">
+                <l-geo-json
+                    ref="oilGroove"
+                    :geojson="oilGrooveGeojson"
+                    :options="oilGrooveOptions"
+                ></l-geo-json>
+            </v-marker-cluster>
             <l-geo-json
                 ref="pipelines"
                 :geojson="pipelineGeojson"
@@ -58,11 +80,7 @@
                 :options="issuesOptions"
                 :options-style="issuesStyleFunction"
             ></l-geo-json>
-            <l-geo-json
-                ref="issues"
-                :geojson="citiesGeojson"
-                :options="citiesOptions"
-            ></l-geo-json>
+            <l-geo-json ref="issues" :geojson="citiesGeojson" :options="citiesOptions"></l-geo-json>
         </l-map>
     </div>
 </template>
@@ -70,10 +88,10 @@
 import { LMap, LTileLayer, LGeoJson, LMarker, LIcon } from "vue2-leaflet";
 import { Icon } from "leaflet";
 import { IssueService } from "@/services/IssueService";
+import Vue2LeafletMarkerCluster from "vue2-leaflet-markercluster";
 
-const appUrl = process.env.NODE_ENV === "production"
-    ? "https://oil.kovalev.team"
-    : "http://localhost:8080"
+const appUrl =
+    process.env.NODE_ENV === "production" ? "https://oil.kovalev.team" : "http://localhost:8080";
 
 delete Icon.Default.prototype._getIconUrl;
 Icon.Default.mergeOptions({
@@ -87,7 +105,8 @@ export default {
         LTileLayer,
         LGeoJson,
         LMarker,
-        LIcon
+        LIcon,
+        "v-marker-cluster": Vue2LeafletMarkerCluster
     },
     name: "MapComponent",
     props: {
@@ -108,29 +127,48 @@ export default {
             pipelineGeojson: {
                 features: []
             },
-            pipelineOptions: {},
-            plantsOptions: {},
-            deviseOptions: {},
-            maxCount: 0,
-            markers: [],
-            regions: [],
-            statistics: [],
-            plants: [],
+            oilGrooveGeojson: {
+                features: []
+            },
             issuesGeojson: {
                 features: []
             },
             citiesGeojson: {
                 features: []
             },
+            pipelineOptions: {},
+            plantsOptions: {},
+            deviseOptions: {},
             citiesOptions: {},
             issuesOptions: {},
+            oilGrooveOptions: {},
+            maxCount: 0,
+            markers: [],
+            regions: [],
+            statistics: [],
+            plants: [],
             issues: [],
             issuesMarkers: [],
             selectedPlant: null,
             search: null,
             map: null,
             deviseMarkers: [],
-            subscriptionId: null
+            subscriptionId: null,
+            selectedFilter: ["NPZ", "NPS", "MINING"],
+            filters: [
+                {
+                    name: "НПС",
+                    value: "NPS"
+                },
+                {
+                    name: "НПЗ",
+                    value: "NPZ"
+                },
+                {
+                    name: "Добыча",
+                    value: "MINING"
+                }
+            ]
         };
     },
 
@@ -138,9 +176,8 @@ export default {
         this.map = this.$refs.map.mapObject;
         this.loadPoints();
         this.loadDeviseMarkers();
-        // await this.loadIssues();
-        this.subscriptionId = IssueService.subscribeToIssuesUpdates(
-            (data) => this.loadIssues(data)
+        this.subscriptionId = IssueService.subscribeToIssuesUpdates((data) =>
+            this.loadIssues(data)
         );
         if (this.kind == "devise") {
             this.map.fitBounds(
@@ -153,6 +190,7 @@ export default {
         }
 
         this.pipelineGeojson.features = require("@/assets/geojsons/map-objects.json").features;
+        this.oilGrooveGeojson.features = require("@/assets/geojsons/oilGrove.json").features;
         console.log(this.pipelineGeojson.features);
         this.plantsOptions = {
             onEachFeature: this.onEachFeature,
@@ -193,10 +231,16 @@ export default {
             limitMarkersCount: 1,
             limitMarkersCountGlobally: false
         };
+        this.oilGrooveOptions = {
+            onEachFeature: this.oilGrooveOnEachFeature,
+            pointToLayer: this.oilGroovePointToLayer,
+            limitMarkersCount: 1,
+            limitMarkersCountGlobally: false
+        };
     },
     methods: {
         loadIssues(data) {
-            this.issues = data
+            this.issues = data;
             let issues = this.issues;
             this.issuesMarkers = this.issues
                 .map((issue) => {
@@ -293,25 +337,19 @@ export default {
         whenClicked(e) {
             if (e.target.feature.geometry.type === "Point") {
                 const organizationId = e.target.feature.properties.organization.id;
-                window
-                    .open(`${appUrl}/organization/${organizationId}`, "_blank")
-                    .focus();
+                window.open(`${appUrl}/organization/${organizationId}`, "_blank").focus();
             }
         },
         whenClickedIssue(e) {
             if (e.target.feature.geometry.type === "Point") {
                 const organizationId = e.target.feature.properties.issue.plantId;
-                window
-                    .open(`${appUrl}/organization/${organizationId}`, "_blank")
-                    .focus();
+                window.open(`${appUrl}/organization/${organizationId}`, "_blank").focus();
             }
         },
         whenClickedCity(e) {
             if (e.target.feature.geometry.type === "Point") {
                 const organizationId = e.target.feature.properties.issue.plantId;
-                window
-                    .open(`${appUrl}/organization/${organizationId}`, "_blank")
-                    .focus();
+                window.open(`${appUrl}/organization/${organizationId}`, "_blank").focus();
             }
         },
         deviseClicked(e) {
@@ -321,20 +359,22 @@ export default {
             }
         },
         pointToLayer: function (feature, latlng) {
-            if (feature.properties.kind == "Plant") {
+            if (this.selectedFilter.includes(feature.properties.organization.plantKind)) {
+                let img;
+                if (feature.properties.organization.plantKind == "MINING") {
+                    img = require("@/assets/img/mining.png");
+                } else {
+                    img = require("@/assets/img/plant.png");
+                }
                 return L.marker(latlng, {
                     icon: L.icon({
-                        iconUrl: require("@/assets/img/plant.png"),
+                        iconUrl: img,
                         iconSize: [30, 47]
-                        // iconAnchor: [12, 41],
-                        // popupAnchor: [1, -34],
-                        // shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-                        // shadowSize: [41, 41],
-                        // shadowAnchor: [12, 41]
                     })
                 });
             }
         },
+
         deviseOnEachFeature(feature, layer) {
             layer.on({
                 click: this.deviseClicked
@@ -357,12 +397,7 @@ export default {
                 return L.marker(latlng, {
                     icon: L.icon({
                         iconUrl: require("@/assets/img/buy.png"),
-                        iconSize: [25, 41],
-                        iconAnchor: [12, 41],
-                        popupAnchor: [1, -34],
-                        shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-                        shadowSize: [41, 41],
-                        shadowAnchor: [12, 41]
+                        iconSize: [25, 41]
                     })
                 });
             }
@@ -387,12 +422,7 @@ export default {
                 return L.marker(latlng, {
                     icon: L.icon({
                         iconUrl: require("@/assets/img/buy.png"),
-                        iconSize: [25, 41],
-                        iconAnchor: [12, 41],
-                        popupAnchor: [1, -34],
-                        shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-                        shadowSize: [41, 41],
-                        shadowAnchor: [12, 41]
+                        iconSize: [25, 41]
                     })
                 });
             }
@@ -403,14 +433,16 @@ export default {
             });
             layer.bindTooltip(
                 "<div> <p>" +
-                    feature.properties.issue.issueTitle
-                    + "<br/><br/>Затронутые города:"
-                    + "<ul>" +
-                    feature.properties.issue.affectedCity.map((city)=> {
-                        return "<li>" + city.addressCity + "</li>";
-                    }).join("")
-                    + "</ul>"
-                    + "<br/>Информация:<br/>" +
+                    feature.properties.issue.issueTitle +
+                    "<br/><br/>Затронутые города:" +
+                    "<ul>" +
+                    feature.properties.issue.affectedCity
+                        .map((city) => {
+                            return "<li>" + city.addressCity + "</li>";
+                        })
+                        .join("") +
+                    "</ul>" +
+                    "<br/>Информация:<br/>" +
                     feature.properties.issue.issueDescription +
                     "</p> </div>",
                 {
@@ -423,12 +455,7 @@ export default {
             return L.marker(latlng, {
                 icon: L.icon({
                     iconUrl: require("@/assets/img/red.gif"),
-                    iconSize: [41, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
-                    shadowSize: [41, 41],
-                    shadowAnchor: [12, 41]
+                    iconSize: [41, 41]
                 })
             });
         },
@@ -438,14 +465,16 @@ export default {
             });
             layer.bindTooltip(
                 "<div> <p>" +
-                    feature.properties.issue.issueTitle
-                    + "<br/><br/>Затронутые города:"
-                    + "<ul>" +
-                    feature.properties.issue.affectedCity.map((city)=> {
-                        return "<li>" + city.addressCity + "</li>";
-                    }).join("")
-                    + "</ul>"
-                    + "<br/>Информация:<br/>" +
+                    feature.properties.issue.issueTitle +
+                    "<br/><br/>Затронутые города:" +
+                    "<ul>" +
+                    feature.properties.issue.affectedCity
+                        .map((city) => {
+                            return "<li>" + city.addressCity + "</li>";
+                        })
+                        .join("") +
+                    "</ul>" +
+                    "<br/>Информация:<br/>" +
                     feature.properties.issue.issueDescription +
                     "</p> </div>",
                 {
@@ -464,6 +493,23 @@ export default {
                     shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
                     shadowSize: [41, 41],
                     shadowAnchor: [12, 41]
+                })
+            });
+        },
+        oilGrooveOnEachFeature(feature, layer) {
+            layer.on({
+                click: this.whenClickedCity
+            });
+            layer.bindTooltip("<div> 123 </div>", {
+                permanent: false,
+                sticky: true
+            });
+        },
+        oilGroovePointToLayer: function (feature, latlng) {
+            return L.marker(latlng, {
+                icon: L.icon({
+                    iconUrl: require("@/assets/img/oil_miss.png"),
+                    iconSize: [25, 25]
                 })
             });
         },
@@ -578,10 +624,7 @@ export default {
     }
 };
 </script>
-<style>
-/* .map {
-    position: absolute;
-    top: -120px;
-    z-index: -1;
-} */
+<style scoped>
+@import "~leaflet.markercluster/dist/MarkerCluster.css";
+@import "~leaflet.markercluster/dist/MarkerCluster.Default.css";
 </style>

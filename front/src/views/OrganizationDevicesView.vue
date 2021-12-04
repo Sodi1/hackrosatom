@@ -23,7 +23,7 @@ export default {
         };
     },
     mounted() {
-        const organizationId = this.$route.params.id;
+        const organizationId = this.$route.params.organizationId;
 
         OrganizationService.getById(organizationId).then((org) => {
             this.isLoading = false;

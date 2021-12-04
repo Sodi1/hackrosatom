@@ -32,7 +32,7 @@ export default {
         };
     },
     created() {
-        this.organizationId = this.$route.params.id;
+        this.organizationId = this.$route.params.organizationId;
     },
     mounted() {
         this.subscriptionId = IssueService.subscribeToOrganizationIssueUpdates(

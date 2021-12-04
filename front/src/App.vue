@@ -16,8 +16,8 @@ export default {
 
 <style>
 a {
-    color: inherit;
-    text-decoration: none;
+    color: inherit !important;
+    text-decoration: none !important;
 }
 
 body {

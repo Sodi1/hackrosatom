@@ -3,7 +3,9 @@
         <h2 v-if="!issues.length" class="mt-4">Инцидентов нет</h2>
 
         <div class="issue-cards mt-4">
-            <IssueCard v-for="i in issues" :issue="i" />
+            <router-link :to="`/organization/${organizationId}/incident/${i.issueId}`" v-for="i in issues" >
+                <IssueCard :issue="i" @issueDeleted="loadIssues" />
+            </router-link>
         </div>
 
         <CreateIssueModal
@@ -42,7 +44,7 @@ export default {
         };
     },
     created() {
-        this.organizationId = parseInt(this.$route.params.id);
+        this.organizationId = parseInt(this.$route.params.organizationId);
     },
     mounted() {
         this.loadIssues();
